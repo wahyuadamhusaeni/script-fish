@@ -2,7 +2,7 @@
     ╔═══════════════════════════════════════════════════╗
     ║          Roblox FishIt Script - Bundled          ║
     ║                                                   ║
-    ║  Build Date: 2025-11-26 11:26:06                        ║
+    ║  Build Date: 2025-12-03 02:31:36                        ║
     ║  Version: 2.0.0                              ║
     ║                                                   ║
     ║  ⚠️  FOR EDUCATIONAL PURPOSES ONLY               ║
@@ -1492,25 +1492,25 @@ Modules["ui/library"] = function()
     
     -- Zivi Hub Logo Asset ID
     -- Using Chloe's original logo asset
-    Library.LogoAssetId = "132435516080103"  -- Chloe logo asset ID
+    Library.LogoAssetId = "132435516080103" -- Chloe logo asset ID
     
     -- Discord Dark Theme Colors
     Library.Theme = {
         -- Primary colors (Discord dark mode)
-        Background = Color3.fromRGB(54, 57, 63),      -- Dark gray (#36393f)
-        Secondary = Color3.fromRGB(47, 49, 54),       -- Darker gray (#2f3136)
-        Tertiary = Color3.fromRGB(32, 34, 37),        -- Darkest gray (#202225)
+        Background = Color3.fromRGB(54, 57, 63), -- Dark gray (#36393f)
+        Secondary = Color3.fromRGB(47, 49, 54),  -- Darker gray (#2f3136)
+        Tertiary = Color3.fromRGB(32, 34, 37),   -- Darkest gray (#202225)
     
         -- Accent colors
-        Primary = Color3.fromRGB(88, 101, 242),       -- Blurple (#5865f2)
-        Success = Color3.fromRGB(67, 181, 129),       -- Green (#43b581)
-        Warning = Color3.fromRGB(250, 166, 26),       -- Yellow (#faa61a)
-        Danger = Color3.fromRGB(237, 66, 69),         -- Red (#ed4245)
+        Primary = Color3.fromRGB(88, 101, 242), -- Blurple (#5865f2)
+        Success = Color3.fromRGB(67, 181, 129), -- Green (#43b581)
+        Warning = Color3.fromRGB(250, 166, 26), -- Yellow (#faa61a)
+        Danger = Color3.fromRGB(237, 66, 69),   -- Red (#ed4245)
     
         -- Text colors
-        TextPrimary = Color3.fromRGB(255, 255, 255),  -- White
+        TextPrimary = Color3.fromRGB(255, 255, 255),   -- White
         TextSecondary = Color3.fromRGB(185, 187, 190), -- Gray
-        TextMuted = Color3.fromRGB(114, 118, 125),    -- Muted gray
+        TextMuted = Color3.fromRGB(114, 118, 125),     -- Muted gray
     
         -- Interactive colors
         Interactive = Color3.fromRGB(185, 187, 190),
@@ -1524,7 +1524,7 @@ Modules["ui/library"] = function()
     ]]
     function Library.load()
         local success, library = pcall(function()
-            return loadstring(game:HttpGet("https://raw.githubusercontent.com/TesterX14/XXXX/refs/heads/main/Library"))()
+            return loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
         end)
     
         if not success then
@@ -1547,13 +1547,8 @@ Modules["ui/library"] = function()
         end
     
         -- Create window with Discord dark theme
-        local window = lib:Window({
-            Title = "Zivi Hub",
-            Footer = "Version 2.5.0 BETA",
-            Image = Library.LogoAssetId,  -- Chloe logo
-            Color = Library.Theme.Primary,  -- Discord blurple
-            Theme = 9542022979,
-            Version = 3
+        local window = lib:CreateWindow({
+            Title = "AdviHub"
         })
     
         if window then
@@ -1570,9 +1565,17 @@ Modules["ui/library"] = function()
         @param duration number - Duration in seconds
     ]]
     function Library.notify(title, message, duration)
-        -- Implementation depends on the UI library
-        -- This is a placeholder
-        print(string.format("[%s] %s", title, message))
+        local lib = Library.load()
+        if lib and lib.Notify then
+            lib:Notify({
+                Title = title,
+                Content = message,
+                Duration = duration or 3,
+                Icon = "bird"
+            })
+        else
+            print(string.format("[%s] %s", title, message))
+        end
     end
     
     return Library
@@ -3931,77 +3934,8 @@ Modules["ui/main-window"] = function()
         if not window then
             error("[MainWindow] Failed to create window")
         end
-    
-        print("[MainWindow] Window created, type:", type(window))
-        print("[MainWindow] AddTab method exists:", type(window.AddTab))
-    
-        -- Create tabs
-        -- Icon can be string name OR rbxassetid
-        print("[MainWindow] Creating Fishing tab...")
-        tabs.fish = window:AddTab({
-            Name = "Fishing",
-            Icon = "rbxassetid://97167558235554"
-        })
-        print("[MainWindow] Fishing tab created:", tabs.fish ~= nil)
-    
-        tabs.trade = window:AddTab({
-            Name = "Trading",
-            Icon = "rbxassetid://114581487428395"
-        })
-    
-        tabs.teleport = window:AddTab({
-            Name = "Teleport",
-            Icon = "rbxassetid://18648122722"
-        })
-    
-        tabs.webhook = window:AddTab({
-            Name = "Webhook",
-            Icon = "rbxassetid://137601480983962"
-        })
-    
-        tabs.misc = window:AddTab({
-            Name = "Misc",
-            Icon = "rbxassetid://6034509993"
-        })
-    
-        -- Setup tabs
-        FishTab.setup(tabs.fish)
-        TradeTab.setup(tabs.trade)
-        TeleportTab.setup(tabs.teleport)
-        WebhookTab.setup(tabs.webhook)
-        MiscTab.setup(tabs.misc)
-    
-        print("[MainWindow] All tabs initialized")
-    
+        
         return window
-    end
-    
-    --[[
-        Get window instance
-        @return table - Window object or nil
-    ]]
-    function MainWindow.getWindow()
-        return window
-    end
-    
-    --[[
-        Get tab by name
-        @param tabName string - Tab name
-        @return table - Tab object or nil
-    ]]
-    function MainWindow.getTab(tabName)
-        return tabs[tabName:lower()]
-    end
-    
-    --[[
-        Destroy window
-    ]]
-    function MainWindow.destroy()
-        if window then
-            -- Clean up if library supports it
-            window = nil
-            tabs = {}
-        end
     end
     
     return MainWindow
