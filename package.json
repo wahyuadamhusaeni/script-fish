@@ -1,0 +1,23 @@
+{
+  "name": "roblox-fishit-script",
+  "version": "2.0.0",
+  "description": "Modular automation script for Roblox FishIt game",
+  "main": "tools/bundler.js",
+  "scripts": {
+    "build": "node tools/bundler.js",
+    "dev": "nodemon --watch src -e lua --exec 'npm run build'",
+    "watch": "npm run dev"
+  },
+  "keywords": [
+    "roblox",
+    "fishit",
+    "automation",
+    "lua",
+    "bundler"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}

@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+
+# Build output (ignore everything except script.lua)
+build/*
+!build/script.lua
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.bak
+
+# Roblox executor files
+*.rbxl
+*.rbxm
+
+# Config files (may contain sensitive data)
+config/*.json
+!config/default-config.lua
+.claude
