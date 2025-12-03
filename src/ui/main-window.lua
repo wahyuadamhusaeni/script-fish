@@ -9,36 +9,38 @@
 ]]
 
 local Library = require("src/ui/library")
-local FishTab = require("src/ui/tabs/fish-tab")
-local TradeTab = require("src/ui/tabs/trade-tab")
-local TeleportTab = require("src/ui/tabs/teleport-tab")
-local WebhookTab = require("src/ui/tabs/webhook-tab")
-local MiscTab = require("src/ui/tabs/misc-tab")
+local FishingTab = require("src/ui/tabs/fishing-tab")
 
 local MainWindow = {}
 
 -- Window instance
-local window = nil
-local tabs = {}
+local Window = nil
 
 --[[
     Create main window with all tabs
     @return table - Window object
 ]]
 function MainWindow.create()
-    if window then
+    if Window then
         warn("[MainWindow] Window already exists")
-        return window
+        return Window
     end
 
     -- Create window
-    window = Library.createWindow()
+    Window = Library.createWindow()
 
-    if not window then
+    if not Window then
         error("[MainWindow] Failed to create window")
     end
-    
-    return window
+
+    local fishingTab = Window:Tab({
+        Title = "Fishing",
+        Icon = "fish"
+    })
+
+    FishingTab.setup(fishingTab)
+
+    return Window
 end
 
 return MainWindow
