@@ -80,11 +80,11 @@ local function autoSellLoop()
         if State.sellMode == "Delay" then
             -- Sell by delay mode
             sellAllItems()
-            task.wait(State.sellDelay)
+            task.wait(State.sellValue * 60)
 
         elseif State.sellMode == "Count" then
             -- Sell by count mode
-            local threshold = tonumber(State.inputSellCount) or max
+            local threshold = tonumber(State.sellValue) or max
 
             if threshold <= current then
                 sellAllItems()
@@ -130,20 +130,12 @@ function AutoSell.setMode(mode)
     end
 end
 
---[[
-    Set sell delay (for Delay mode)
-    @param seconds number - Delay in seconds
-]]
-function AutoSell.setDelay(seconds)
-    State.sellDelay = math.max(1, tonumber(seconds) or 60)
+function AutoSell.setSellValue(value)
+    State.sellValue = math.max(1, tonumber(value) or 1)
 end
 
---[[
-    Set sell count threshold (for Count mode)
-    @param count number - Fish count threshold
-]]
-function AutoSell.setCount(count)
-    State.inputSellCount = math.max(1, tonumber(count) or 50)
+function AutoSell.sellNow()
+    sellAllItems()
 end
 
 --[[

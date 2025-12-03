@@ -38,6 +38,31 @@ function MainWindow.create()
         Icon = "fish"
     })
 
+    local automaticallyTab = Window:Tab({
+        Title = "Automatically",
+        Icon = "circle-play"
+    })
+
+    local tradingTab = Window:Tab({
+        Title = "Trading",
+        Icon = "trade"
+    })
+
+    local teleportTab = Window:Tab({
+        Title = "Teleport",
+        Icon = "teleport"
+    })
+
+    local webhookTab = Window:Tab({
+        Title = "Webhook",
+        Icon = "webhook"
+    })
+
+    local miscTab = Window:Tab({
+        Title = "Misc",
+        Icon = "misc"
+    })
+
     FishingTab.setup(fishingTab)
 
     return Window

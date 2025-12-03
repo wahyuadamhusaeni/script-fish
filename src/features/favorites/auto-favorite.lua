@@ -112,7 +112,6 @@ local function scanInventory()
 
     local Data = Services.Replion.Client:WaitReplion("Data")
     local items = Data:GetExpect({"Inventory", "Items"})
-
     for _, item in ipairs(items) do
         local should, uuid = shouldFavorite(item)
         if should then
@@ -176,12 +175,7 @@ end
     @param variants table - Array of variants
 ]]
 function AutoFavorite.setVariants(variants)
-    if next(State.selectedName) ~= nil then
-        State.selectedVariant = toSet(variants)
-    else
-        State.selectedVariant = {}
-        warn("[AutoFavorite] Select names first before selecting variants")
-    end
+    State.selectedVariant = toSet(variants)
 end
 
 --[[

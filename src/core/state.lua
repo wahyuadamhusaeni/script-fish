@@ -28,8 +28,7 @@ local State = {
     -- Selling
     autoSellEnabled = false,
     sellMode = "Delay",  -- "Delay" or "Count"
-    sellDelay = 60,
-    inputSellCount = 50,
+    sellValue = 1,
 
     -- Favorites
     autoFavEnabled = false,

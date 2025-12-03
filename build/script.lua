@@ -2,7 +2,7 @@
     ╔═══════════════════════════════════════════════════╗
     ║          Roblox FishIt Script - Bundled          ║
     ║                                                   ║
-    ║  Build Date: 2025-12-03 02:54:11                        ║
+    ║  Build Date: 2025-12-03 04:27:02                        ║
     ║  Version: 2.0.0                              ║
     ║                                                   ║
     ║  ⚠️  FOR EDUCATIONAL PURPOSES ONLY               ║
@@ -152,6 +152,15 @@ Modules["core/constants"] = function()
         [7] = "Secret"
     }
     
+    Constants.TIER_FISH_2 = {
+        "Uncommon",
+        "Rare",
+        "Epic",
+        "Legendary",
+        "Mythic",
+        "Secret"
+    }
+    
     -- Fish variants
     Constants.VARIANTS = {
         "Galaxy",
@@ -244,8 +253,7 @@ Modules["core/state"] = function()
         -- Selling
         autoSellEnabled = false,
         sellMode = "Delay",  -- "Delay" or "Count"
-        sellDelay = 60,
-        inputSellCount = 50,
+        sellValue = 1,
     
         -- Favorites
         autoFavEnabled = false,
@@ -889,11 +897,11 @@ Modules["features/selling/auto-sell"] = function()
             if State.sellMode == "Delay" then
                 -- Sell by delay mode
                 sellAllItems()
-                task.wait(State.sellDelay)
+                task.wait(State.sellValue * 60)
     
             elseif State.sellMode == "Count" then
                 -- Sell by count mode
-                local threshold = tonumber(State.inputSellCount) or max
+                local threshold = tonumber(State.sellValue) or max
     
                 if threshold <= current then
                     sellAllItems()
@@ -939,20 +947,12 @@ Modules["features/selling/auto-sell"] = function()
         end
     end
     
-    --[[
-        Set sell delay (for Delay mode)
-        @param seconds number - Delay in seconds
-    ]]
-    function AutoSell.setDelay(seconds)
-        State.sellDelay = math.max(1, tonumber(seconds) or 60)
+    function AutoSell.setSellValue(value)
+        State.sellValue = math.max(1, tonumber(value) or 1)
     end
     
-    --[[
-        Set sell count threshold (for Count mode)
-        @param count number - Fish count threshold
-    ]]
-    function AutoSell.setCount(count)
-        State.inputSellCount = math.max(1, tonumber(count) or 50)
+    function AutoSell.sellNow()
+        sellAllItems()
     end
     
     --[[
@@ -1083,7 +1083,6 @@ Modules["features/favorites/auto-favorite"] = function()
     
         local Data = Services.Replion.Client:WaitReplion("Data")
         local items = Data:GetExpect({"Inventory", "Items"})
-    
         for _, item in ipairs(items) do
             local should, uuid = shouldFavorite(item)
             if should then
@@ -1147,12 +1146,7 @@ Modules["features/favorites/auto-favorite"] = function()
         @param variants table - Array of variants
     ]]
     function AutoFavorite.setVariants(variants)
-        if next(State.selectedName) ~= nil then
-            State.selectedVariant = toSet(variants)
-        else
-            State.selectedVariant = {}
-            warn("[AutoFavorite] Select names first before selecting variants")
-        end
+        State.selectedVariant = toSet(variants)
     end
     
     --[[
@@ -1584,22 +1578,732 @@ Modules["ui/library"] = function()
 
 end
 
+-- Module: features/fishing/blatant-fish
+Modules["features/fishing/blatant-fish"] = function()
+    -- src/features/fishing/blatant-fish.lua
+    -- Blatant fishing (aggressive, obvious method)
+    
+    local State = require("src/core/state")
+    local Functions = require("src/network/functions")
+    local Events = require("src/network/events")
+    
+    local BlatantFish = {}
+    
+    -- Blatant fishing state
+    State.blatantFishing = false
+    State.reelDelay = 1.2 -- Delay between catches
+    State.fishingDelay = 0.4
+    
+    local function fishFastNew()
+        task.spawn(function()
+            -- Cancel any ongoing fishing
+            pcall(function()
+                Functions.Cancel:InvokeServer()
+            end)
+    
+            -- Get server time and charge rod
+            local serverTime = workspace:GetServerTimeNow()
+            pcall(function()
+                Functions.ChargeRod:InvokeServer(serverTime)
+            end)
+    
+            -- Start minigame with max power
+            pcall(function()
+                Functions.StartMini:InvokeServer(-1, 0.999)
+            end)
+    
+            -- Wait fishing delay
+            task.wait(State.fishingDelay)
+    
+            -- Complete fishing
+            pcall(function()
+                Events.REFishDone:FireServer()
+            end)
+        end)
+    end
+    
+    -- Start blatant fishing
+    function BlatantFish.start()
+        if State.blatantFishing then
+            return
+        end
+    
+        State.blatantFishing = true
+    
+        task.spawn(function()
+            while State.blatantFishing do
+                fishFastNew()
+                task.wait(State.reelDelay)
+            end
+        end)
+    
+        print("[Blatant Fish] Blatant fishing started")
+    end
+    
+    -- Stop blatant fishing
+    function BlatantFish.stop()
+        State.blatantFishing = false
+        print("[Blatant Fish] Blatant fishing stopped")
+    end
+    
+    -- Set reel delay
+    function BlatantFish.setReelDelay(delay)
+        local delayNum = tonumber(delay)
+        if delayNum and delayNum >= 0 then
+            State.reelDelay = delayNum
+            print("[Blatant Fish] Reel delay set to:", delayNum)
+            return true
+        end
+        return false
+    end
+    
+    -- Set fishing delay
+    function BlatantFish.setFishingDelay(delay)
+        local delayNum = tonumber(delay)
+        if delayNum and delayNum >= 0 then
+            State.fishingDelay = delayNum
+            print("[Blatant Fish] Fishing delay set to:", delayNum)
+            return true
+        end
+        return false
+    end
+    
+    -- Recovery fishing (cancel stuck fishing)
+    function BlatantFish.recovery()
+        pcall(function()
+            Functions.Cancel:InvokeServer()
+        end)
+        print("[Blatant Fish] Recovery executed")
+    end
+    
+    return BlatantFish
+
+end
+
+-- Module: features/fishing/legit-fish
+Modules["features/fishing/legit-fish"] = function()
+    --[[
+        Legit Fishing Module
+    
+        Implements legit fishing with game mechanics compliance.
+        Two modes: Always Perfect and Normal.
+    
+        Dependencies:
+        - src/core/services
+        - src/core/state
+        - src/network/events
+    ]]
+    
+    local Services = require("src/core/services")
+    local State = require("src/core/state")
+    local Events = require("src/network/events")
+    
+    local LegitFish = {}
+    
+    -- Initialize state
+    State.legitFishing = false
+    State.shakeDelay = 0
+    State.autoShake = false
+    State.legitMode = "Always Perfect" -- "Always Perfect" or "Normal"
+    State.legitfishingDelay = 0.7 -- Default delay in seconds
+    
+    -- Get player user ID
+    local userId = tostring(Services.LocalPlayer.UserId)
+    
+    -- Get cosmetic folder for bobber detection
+    local cosmeticFolder = nil
+    pcall(function()
+        cosmeticFolder = workspace:FindFirstChild("CosmeticFolder")
+    end)
+    
+    -- Try cast function (charges rod and releases)
+    local function tryCast()
+        local PlayerGui = Services.PlayerGui
+        local Camera = Services.Camera
+        local VIM = Services.VIM
+        local LocalPlayer = Services.LocalPlayer
+        local FishingController = Services.FishingController
+    
+        if not FishingController then
+            warn("[Legit Fish] FishingController not found")
+            return
+        end
+    
+        -- Center of screen
+        local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        local lastGUID = nil
+    
+        while FishingController._autoLoop do
+            -- If already fishing, wait
+            if FishingController:GetCurrentGUID() then
+                task.wait(0.05)
+            else
+                -- Click to start charging
+                VIM:SendMouseButtonEvent(center.X, center.Y, 0, true, game, 1)
+                task.wait(0.05)
+    
+                -- Wait for charge bar to appear and reach ~95%
+                local chargeSuccess, chargeBar = pcall(function()
+                    return PlayerGui:WaitForChild("Charge", 1)
+                        :WaitForChild("Main")
+                        :WaitForChild("CanvasGroup")
+                        :WaitForChild("Bar")
+                end)
+    
+                if chargeSuccess and chargeBar then
+                    local startTime = tick()
+                    while chargeBar:IsDescendantOf(PlayerGui) and chargeBar.Size.Y.Scale < 0.95 do
+                        task.wait(0.001)
+                        if tick() - startTime > 1 then
+                            break
+                        end
+                    end
+                end
+    
+                -- Release click to cast
+                VIM:SendMouseButtonEvent(center.X, center.Y, 0, false, game, 1)
+    
+                -- Wait for shake detection (GUID appears)
+                local waitStart = tick()
+                local shakeDetected = false
+                while tick() - waitStart < 3 do
+                    local currentGUID = FishingController:GetCurrentGUID()
+                    if currentGUID and currentGUID ~= lastGUID then
+                        shakeDetected = true
+                        print("[Legit Fish] Shake detected! GUID:", currentGUID)
+                        lastGUID = currentGUID
+                        break
+                    else
+                        task.wait(0.05)
+                    end
+                end
+    
+                -- If shake detected, wait for catch completion
+                if shakeDetected then
+                    local oldCaught = LocalPlayer.leaderstats and LocalPlayer.leaderstats.Caught.Value or 0
+                    local catchStart = tick()
+    
+                    -- Wait for caught count to increase or timeout
+                    while tick() - catchStart < 8
+                        and (not LocalPlayer.leaderstats or oldCaught >= LocalPlayer.leaderstats.Caught.Value)
+                        and FishingController:GetCurrentGUID() do
+                        task.wait(0.1)
+                    end
+    
+                    -- Wait for GUID to clear
+                    while FishingController:GetCurrentGUID() do
+                        task.wait(0.05)
+                    end
+    
+                    task.wait(1.3) -- Cooldown before next cast
+                end
+            end
+    
+            task.wait(0.05)
+        end
+    end
+    
+    -- Always Perfect Mode
+    local function startAlwaysPerfectMode()
+        local FishingController = Services.FishingController
+        if not FishingController or not cosmeticFolder then
+            warn("[Legit Fish] Missing FishingController or CosmeticFolder")
+            return
+        end
+    
+        task.spawn(function()
+            local completed = false
+    
+            while State.legitFishing and FishingController._autoLoop do
+                -- Wait for bobber to appear
+                if not cosmeticFolder:FindFirstChild(userId) then
+                    repeat
+                        tryCast()
+                        task.wait(0.1)
+                    until cosmeticFolder:FindFirstChild(userId) or not FishingController._autoLoop
+                end
+    
+                -- While bobber exists (fishing in progress)
+                while cosmeticFolder:FindFirstChild(userId) and FishingController._autoLoop do
+                    -- If minigame active (GUID exists)
+                    if FishingController:GetCurrentGUID() then
+                        local startTime = tick()
+    
+                        -- Spam click minigame
+                        while FishingController:GetCurrentGUID() and FishingController._autoLoop do
+                            pcall(function()
+                                FishingController:RequestFishingMinigameClick()
+                            end)
+    
+                            -- Check if delay reached
+                            if tick() - startTime >= (State.legitfishingDelay or 0) then
+                                task.wait(State.legitfishingDelay or 0)
+    
+                                -- Complete fishing
+                                repeat
+                                    pcall(function()
+                                        Events.REFishDone:FireServer()
+                                    end)
+                                    task.wait(0.05)
+                                    completed = not FishingController:GetCurrentGUID() or not FishingController._autoLoop
+                                until completed
+                            else
+                                task.wait()
+                            end
+    
+                            if completed then
+                                break
+                            end
+                        end
+                    end
+    
+                    completed = false
+                    task.wait(0.2)
+                end
+    
+                -- Wait for bobber to disappear
+                repeat
+                    task.wait(0.1)
+                until not cosmeticFolder:FindFirstChild(userId) or not FishingController._autoLoop
+    
+                -- Recast
+                if FishingController._autoLoop then
+                    task.wait(0.2)
+                    tryCast()
+                end
+    
+                task.wait(0.2)
+            end
+        end)
+    end
+    
+    -- Normal Mode
+    local function startNormalMode()
+        local FishingController = Services.FishingController
+        if not FishingController then
+            warn("[Legit Fish] FishingController not found")
+            return
+        end
+    
+        -- Override power to always return max
+        if not FishingController._oldGetPower then
+            FishingController._oldGetPower = FishingController._getPower
+        end
+        FishingController._getPower = function()
+            return 0.999
+        end
+    
+        task.spawn(function()
+            while State.legitFishing and FishingController._autoLoop do
+                -- If shake enabled and minigame active
+                if _G.ShakeEnabled and FishingController:GetCurrentGUID() then
+                    local startTime = tick()
+    
+                    while FishingController:GetCurrentGUID()
+                        and FishingController._autoLoop
+                        and _G.ShakeEnabled do
+    
+                        -- Spam click
+                        pcall(function()
+                            FishingController:RequestFishingMinigameClick()
+                        end)
+    
+                        -- Check delay
+                        if tick() - startTime >= (State.legitfishingDelay or 1) then
+                            pcall(function()
+                                Events.REFishDone:FireServer()
+                            end)
+                            task.wait(0.1)
+    
+                            if not FishingController:GetCurrentGUID()
+                                or not FishingController._autoLoop
+                                or not _G.ShakeEnabled then
+                                break
+                            end
+                        end
+    
+                        task.wait(0.1)
+                    end
+    
+                -- If not fishing, auto cast
+                elseif not FishingController:GetCurrentGUID() then
+                    local center = Vector2.new(
+                        Services.Camera.ViewportSize.X / 2,
+                        Services.Camera.ViewportSize.Y / 2
+                    )
+    
+                    pcall(function()
+                        FishingController:RequestChargeFishingRod(center, true)
+                    end)
+    
+                    task.wait(0.25)
+                end
+    
+                task.wait(0.05)
+            end
+        end)
+    end
+    
+    -- Start legit fishing
+    function LegitFish.start()
+        if State.legitFishing then
+            return
+        end
+    
+        local FishingController = Services.FishingController
+        if not FishingController then
+            warn("[Legit Fish] FishingController not available")
+            return false
+        end
+    
+        State.legitFishing = true
+        FishingController._autoLoop = true
+    
+        -- Start appropriate mode
+        if State.legitMode == "Always Perfect" then
+            print("[Legit Fish] Starting Always Perfect mode")
+            startAlwaysPerfectMode()
+        elseif State.legitMode == "Normal" then
+            print("[Legit Fish] Starting Normal mode")
+            startNormalMode()
+        end
+    
+        return true
+    end
+    
+    -- Stop legit fishing
+    function LegitFish.stop()
+        State.legitFishing = false
+    
+        local FishingController = Services.FishingController
+        if FishingController then
+            FishingController._autoLoop = false
+    
+            -- Restore original power function
+            if FishingController._oldGetPower then
+                FishingController._getPower = FishingController._oldGetPower
+                FishingController._oldGetPower = nil
+            end
+        end
+    
+        print("[Legit Fish] Legit fishing stopped")
+    end
+    
+    -- Set legit mode
+    function LegitFish.setMode(mode)
+        if mode == "Always Perfect" or mode == "Normal" then
+            State.legitMode = mode
+            print("[Legit Fish] Mode set to:", mode)
+            return true
+        end
+        return false
+    end
+    
+    -- Start auto shake (independent feature)
+    function LegitFish.startAutoShake()
+        if State.autoShake then
+            return
+        end
+    
+        State.autoShake = true
+    
+        -- Disable click effect GUI
+        local clickEffect = Services.PlayerGui:FindFirstChild("!!! Click Effect")
+        if clickEffect then
+            clickEffect.Enabled = false
+        end
+    
+        task.spawn(function()
+            while State.autoShake do
+                pcall(function()
+                    if Services.FishingController then
+                        Services.FishingController:RequestFishingMinigameClick()
+                    end
+                end)
+                task.wait(State.shakeDelay)
+            end
+    
+            -- Re-enable click effect when stopped
+            if clickEffect then
+                clickEffect.Enabled = true
+            end
+        end)
+    
+        print("[Legit Fish] Auto shake started (delay:", State.shakeDelay, ")")
+    end
+    
+    -- Stop auto shake
+    function LegitFish.stopAutoShake()
+        State.autoShake = false
+    
+        -- Re-enable click effect
+        local clickEffect = Services.PlayerGui:FindFirstChild("!!! Click Effect")
+        if clickEffect then
+            clickEffect.Enabled = true
+        end
+    
+        print("[Legit Fish] Auto shake stopped")
+    end
+    
+    -- Set shake delay
+    function LegitFish.setShakeDelay(delay)
+        local delayNum = tonumber(delay)
+        if delayNum and delayNum >= 0 then
+            State.shakeDelay = delayNum
+            print("[Legit Fish] Shake delay set to:", delayNum)
+            return true
+        end
+        return false
+    end
+    
+    function LegitFish.setFishingDelay(delay)
+        local delayNum = tonumber(delay)
+        if delayNum and delayNum >= 0 then
+            State.legitfishingDelay = delayNum
+            print("[Legit Fish] Fishing delay set to:", delayNum)
+            return true
+        end
+        return false
+    end
+    
+    return LegitFish
+
+end
+
 -- Module: ui/tabs/fishing-tab
 Modules["ui/tabs/fishing-tab"] = function()
+    local Constants = require("src/core/constants")
+    local Services = require("src/core/services")
+    
+    local BlatantFish = require("src/features/fishing/blatant-fish")
+    local AutoSell = require("src/features/selling/auto-sell")
+    local AutoFavorite = require("src/features/favorites/auto-favorite")
+    local LegitFish = require("src/features/fishing/legit-fish")
+    
+    
+    
+    local fishNames = {}
     local FishingTab = {}
     
+    local function getFishNames()
+        if #fishNames > 0 then
+            return fishNames
+        end
+    
+        local items = Services.RS:WaitForChild("Items")
+    
+        for _, item in ipairs(items:GetChildren()) do
+            if item:IsA("ModuleScript") then
+                local success, result = pcall(require, item)
+                if success and result.Data and result.Data.Type == "Fish" then
+                    table.insert(fishNames, result.Data.Name)
+                end
+            end
+        end
+    
+        table.sort(fishNames)
+        return fishNames
+    end
+    
     function FishingTab.setup(tab)
-        tab:Button({
-            Text = "Start Fishing",
-            Icon = "fish",
+        local legitSection = tab:Section({
+            Title = "Legit Feature"
+        })
+    
+        legitSection:Dropdown({
+            Title = "Mode",
+            Value = "Always Perfect",
+            Values = { "Always Perfect", "Normal" },
+            Callback = function(value)
+                LegitFish.setMode(value)
+            end
+        })
+    
+        legitSection:Input({
+            Title = "Fishing Delay",
+            Value = "0.7",
+            Type = "Input",
+            Callback = function(value)
+                LegitFish.setFishingDelay(value)
+            end
+        })
+    
+        legitSection:Toggle({
+            Title = "Enable Legit Fishing",
+            Value = false,
+            Callback = function(enabled)
+                if enabled then
+                    LegitFish.start()
+                else
+                    LegitFish.stop()
+                end
+            end
+        })
+    
+        legitSection.Divider()
+    
+        legitSection:Input({
+            Title = "Shake Delay",
+            Value = "0",
+            Type = "Input",
+            Callback = function(value)
+                LegitFish.setShakeDelay(value)
+            end
+        })
+    
+        legitSection:Toggle({
+            Title = "Auto Shake",
+            Value = false,
+            Callback = function(enabled)
+                _G.ShakeEnabled = enabled
+                if enabled then
+                    LegitFish.startAutoShake()
+                    print("[Fish Tab] Auto shake enabled")
+                else
+                    LegitFish.stopAutoShake()
+                    print("[Fish Tab] Auto shake disabled")
+                end
+            end
+        })
+    
+        local blatanSection = tab:Section({
+            Title = "Blatan Feature"
+        })
+    
+        blatanSection:Input({
+            Title = "Delay Reel",
+            Value = "1.8",
+            Type = "Input",
+            Callback = function(value)
+                BlatantFish.setReelDelay(value)
+            end
+        })
+    
+        blatanSection:Input({
+            Title = "Delay Fishing",
+            Value = "0.7",
+            Type = "Input",
+            Callback = function(value)
+                BlatantFish.setFishingDelay(value)
+            end
+        })
+    
+        blatanSection:Toggle({
+            Title = "Blatan Fishing",
+            Value = false,
+            Callback = function(enabled)
+                if enabled then
+                    BlatantFish.start()
+                else
+                    BlatantFish.stop()
+                end
+            end
+        })
+    
+        blatanSection:Button({
+            Title = "Recovery Fishing",
             Callback = function()
-                print("Start Fishing")
+                BlatantFish.recovery()
+            end
+        })
+    
+        local sellingSection = tab:Section({
+            Title = "Selling Feature"
+        })
+    
+        sellingSection:Dropdown({
+            Title = "Fish Type",
+            Value = "Delay",
+            Values = {
+                "Delay",
+                "Count"
+            },
+            Callback = function(value)
+                AutoSell.setMode(value)
+            end
+        })
+    
+        sellingSection:Input({
+            Title = "Set Value",
+            Desc = "Delay = Minute, Count = Backpack Count",
+            Value = "1",
+            Type = "Input",
+            Callback = function(value)
+                AutoSell.setDelay(value)
+            end
+        })
+    
+        sellingSection:Toggle({
+            Title = "Start Auto Selling",
+            Value = false,
+            Callback = function(enabled)
+                if enabled then
+                    AutoSell.start()
+                else
+                    AutoSell.stop()
+                end
+            end
+        })
+    
+        sellingSection:Button({
+            Title = "Sell Now",
+            Callback = function()
+                AutoSell.sellNow()
+            end
+        })
+    
+        local favoriteSection = tab:Section({
+            Title = "Favorite Feature"
+        })
+    
+        favoriteSection:Dropdown({
+            Title = "Favorite by Name",
+            Value = {},
+            Values = getFishNames(),
+            Multi = true,
+            AllowNone = true,
+            Callback = function(value)
+                AutoFavorite.setNames(value)
+            end
+        })
+    
+        favoriteSection:Dropdown({
+            Title = "Favorite by Rarity",
+            Value = {},
+            Values = Constants.TIER_FISH_2,
+            Multi = true,
+            AllowNone = true,
+            Callback = function(value)
+                AutoFavorite.setRarities(value)
+            end
+        })
+    
+        favoriteSection:Dropdown({
+            Title = "Favorite by Variant",
+            Value = {},
+            Values = Constants.VARIANTS,
+            Multi = true,
+            AllowNone = true,
+            Callback = function(value)
+                AutoFavorite.setVariants(value)
+            end
+        })
+    
+        favoriteSection:Toggle({
+            Title = "Auto Favorite",
+            Value = false,
+            Callback = function(enabled)
+                if enabled then
+                    AutoFavorite.start()
+                else
+                    AutoFavorite.stop()
+                end
             end
         })
     end
     
-    
     return FishingTab
+
 end
 
 -- Module: ui/main-window
@@ -1644,6 +2348,31 @@ Modules["ui/main-window"] = function()
             Icon = "fish"
         })
     
+        local automaticallyTab = Window:Tab({
+            Title = "Automatically",
+            Icon = "circle-play"
+        })
+    
+        local tradingTab = Window:Tab({
+            Title = "Trading",
+            Icon = "trade"
+        })
+    
+        local teleportTab = Window:Tab({
+            Title = "Teleport",
+            Icon = "teleport"
+        })
+    
+        local webhookTab = Window:Tab({
+            Title = "Webhook",
+            Icon = "webhook"
+        })
+    
+        local miscTab = Window:Tab({
+            Title = "Misc",
+            Icon = "misc"
+        })
+    
         FishingTab.setup(fishingTab)
     
         return Window
@@ -1655,15 +2384,6 @@ end
 
 -- Module: main
 Modules["main"] = function()
-    --[[
-        Main Entry Point
-    
-        This is the entry point for the script.
-        When bundled, this file will be executed last.
-    
-        Version: 2.0.0 (Refactored)
-    ]]
-    
     -- ============================================
     -- EXECUTOR COMPATIBILITY CHECK
     -- ============================================
@@ -1757,41 +2477,6 @@ Modules["main"] = function()
     _G.Variant = Constants.VARIANTS
     
     -- ============================================
-    -- STARTUP MESSAGE
-    -- ============================================
-    
-    print("╔═══════════════════════════════════════════════════╗")
-    print("║                   Zivi Hub                       ║")
-    print("║              Version 1.0.0 BETA                  ║")
-    print("╚═══════════════════════════════════════════════════╝")
-    print("")
-    print("[OK] Core modules loaded:")
-    print("   - Services ✓")
-    print("   - Constants ✓")
-    print("   - State ✓")
-    print("")
-    print("[OK] Network modules loaded:")
-    print("   - Events ✓")
-    print("   - Functions ✓")
-    print("   - Webhook ✓")
-    print("")
-    print("[OK] Utility modules loaded:")
-    print("   - PlayerUtils ✓")
-    print("")
-    print("[OK] Feature modules loaded:")
-    print("   - InstantFish ✓")
-    print("   - AutoSell ✓")
-    print("   - AutoFavorite ✓")
-    print("   - Teleport ✓")
-    print("")
-    print("[OK] Config modules loaded:")
-    print("   - Locations ✓")
-    print("")
-    print("👤 Player:", LocalPlayer.Name)
-    print("[INFO] Executor: Compatible")
-    print("")
-    
-    -- ============================================
     -- LOAD UI MODULES
     -- ============================================
     
@@ -1836,12 +2521,6 @@ Modules["main"] = function()
         warn("[WARNING] UI modules not loaded - UI unavailable")
         print("[WARNING] Features still available via console")
     end
-    
-    print("")
-    print("╔═══════════════════════════════════════════════════╗")
-    print("║           🎯 Zivi Hub v1.0.0 BETA Loaded!       ║")
-    print("╚═══════════════════════════════════════════════════╝")
-
 end
 
 

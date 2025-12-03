@@ -1,12 +1,3 @@
---[[
-    Main Entry Point
-
-    This is the entry point for the script.
-    When bundled, this file will be executed last.
-
-    Version: 2.0.0 (Refactored)
-]]
-
 -- ============================================
 -- EXECUTOR COMPATIBILITY CHECK
 -- ============================================
@@ -100,41 +91,6 @@ _G.TierFish = Constants.TIER_FISH
 _G.Variant = Constants.VARIANTS
 
 -- ============================================
--- STARTUP MESSAGE
--- ============================================
-
-print("╔═══════════════════════════════════════════════════╗")
-print("║                   Zivi Hub                       ║")
-print("║              Version 1.0.0 BETA                  ║")
-print("╚═══════════════════════════════════════════════════╝")
-print("")
-print("[OK] Core modules loaded:")
-print("   - Services ✓")
-print("   - Constants ✓")
-print("   - State ✓")
-print("")
-print("[OK] Network modules loaded:")
-print("   - Events ✓")
-print("   - Functions ✓")
-print("   - Webhook ✓")
-print("")
-print("[OK] Utility modules loaded:")
-print("   - PlayerUtils ✓")
-print("")
-print("[OK] Feature modules loaded:")
-print("   - InstantFish ✓")
-print("   - AutoSell ✓")
-print("   - AutoFavorite ✓")
-print("   - Teleport ✓")
-print("")
-print("[OK] Config modules loaded:")
-print("   - Locations ✓")
-print("")
-print("👤 Player:", LocalPlayer.Name)
-print("[INFO] Executor: Compatible")
-print("")
-
--- ============================================
 -- LOAD UI MODULES
 -- ============================================
 
@@ -179,8 +135,3 @@ else
     warn("[WARNING] UI modules not loaded - UI unavailable")
     print("[WARNING] Features still available via console")
 end
-
-print("")
-print("╔═══════════════════════════════════════════════════╗")
-print("║           🎯 Zivi Hub v1.0.0 BETA Loaded!       ║")
-print("╚═══════════════════════════════════════════════════╝")

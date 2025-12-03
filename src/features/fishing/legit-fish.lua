@@ -21,6 +21,7 @@ State.legitFishing = false
 State.shakeDelay = 0
 State.autoShake = false
 State.legitMode = "Always Perfect" -- "Always Perfect" or "Normal"
+State.legitfishingDelay = 0.7 -- Default delay in seconds
 
 -- Get player user ID
 local userId = tostring(Services.LocalPlayer.UserId)
@@ -151,8 +152,8 @@ local function startAlwaysPerfectMode()
                         end)
 
                         -- Check if delay reached
-                        if tick() - startTime >= (_G.Delay or 0) then
-                            task.wait(_G.Delay or 0)
+                        if tick() - startTime >= (State.legitfishingDelay or 0) then
+                            task.wait(State.legitfishingDelay or 0)
 
                             -- Complete fishing
                             repeat
@@ -224,7 +225,7 @@ local function startNormalMode()
                     end)
 
                     -- Check delay
-                    if tick() - startTime >= (_G.Delay or 1) then
+                    if tick() - startTime >= (State.legitfishingDelay or 1) then
                         pcall(function()
                             Events.REFishDone:FireServer()
                         end)
@@ -366,6 +367,16 @@ function LegitFish.setShakeDelay(delay)
     if delayNum and delayNum >= 0 then
         State.shakeDelay = delayNum
         print("[Legit Fish] Shake delay set to:", delayNum)
+        return true
+    end
+    return false
+end
+
+function LegitFish.setFishingDelay(delay)
+    local delayNum = tonumber(delay)
+    if delayNum and delayNum >= 0 then
+        State.legitfishingDelay = delayNum
+        print("[Legit Fish] Fishing delay set to:", delayNum)
         return true
     end
     return false

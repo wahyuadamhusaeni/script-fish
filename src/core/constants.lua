@@ -21,6 +21,15 @@ Constants.TIER_FISH = {
     [7] = "Secret"
 }
 
+Constants.TIER_FISH_2 = {
+    "Uncommon",
+    "Rare",
+    "Epic",
+    "Legendary",
+    "Mythic",
+    "Secret"
+}
+
 -- Fish variants
 Constants.VARIANTS = {
     "Galaxy",
